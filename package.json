@@ -1,0 +1,16 @@
+{
+  "name": "chatApp",
+  "version": "1.0.0",
+  "description": "Learning about sockets with a socket.io chat app",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "hapi": "^16.4.3",
+    "inert": "^4.2.0",
+    "socket.io": "^2.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^4.1.1",
+    "eslint-plugin-react": "^7.1.0"
+  }
+}
