@@ -22,21 +22,23 @@ server.route({
     handler: function(request, reply) {
         reply.file("index.html");
     }
-    // {
-    //     directory: {
-    //         path: ".",
-    //         redirectToSlash: true,
-    //         index: true
-    //     }
-    // }
 });
 
 var io = require("socket.io")(server.listener);
+
+var chatlogs = [];
+
 io.on("connection", function(socket) {
+    io.emit("chat message", chatlogs);
     console.log("A user has connected");
     socket.on("chat message", function(msg) {
-        io.emit("chat message", msg);
-        console.log("message: " + msg);
+        chatlogs.push({
+            date: new Date(),
+            message: msg,
+            username: "longer user name let's see how long"
+        });
+        io.emit("chat message", chatlogs);
+        console.log("message: \n" + chatlogs);
     });
 });
 server.start();

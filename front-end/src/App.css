@@ -1,0 +1,83 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  animation: App-logo-spin infinite 20s linear;
+  height: 80px;
+}
+
+.App-header {
+  background-color: #222;
+  height: 150px;
+  padding: 20px;
+  color: white;
+}
+
+.App-intro {
+  font-size: large;
+}
+ul { 
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-height: 400px;
+    height: 400px;
+    background-color: dimgray;
+    overflow-y: scroll;
+    /* max-width: 800px; */
+}
+/* li { */
+/*     display: flex; */
+/* } */
+form { 
+    max-width: 800px;
+    display: flex;
+}
+input {
+    flex-grow: 1;
+}
+p {
+    padding-left: 5px;
+    margin: 0;
+}
+.messageData {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    background-color: grey;
+}
+.messageData p:nth-of-type(2) {
+    flex: 0 1 auto;
+    /* position: absolute; */
+}
+.messageData p:nth-of-type(1) {
+    width: 175px;
+}
+.messageData p:nth-of-type(3) {
+    flex: 0 1 auto;
+    width: 175px;
+
+}
+.username {
+    color: purple;
+}
+.message {
+    background-color: silver;
+    margin: 0;
+}
+#endOfMessages { 
+    font-size: 10px;
+    background-color: aqua;
+    justify-content: center;
+
+}
+.chatBox { 
+    background-color: grey;
+    max-width:800px;
+}
+
+@keyframes App-logo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
