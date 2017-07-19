@@ -38,7 +38,7 @@ io.on("connection", function(socket) {
             username: "longer user name let's see how long"
         });
         io.emit("chat message", chatlogs);
-        console.log("message: \n" + chatlogs);
+        console.log("Message received");
     });
 });
 server.start();

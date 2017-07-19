@@ -46,6 +46,7 @@ p {
     justify-content: space-between;
     position: relative;
     background-color: grey;
+    color: black;
 }
 .messageData p:nth-of-type(2) {
     flex: 0 1 auto;
@@ -65,6 +66,7 @@ p {
 .message {
     background-color: silver;
     margin: 0;
+    color: black;
 }
 #endOfMessages { 
     font-size: 10px;

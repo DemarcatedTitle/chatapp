@@ -40,7 +40,7 @@ class ChatBox extends React.PureComponent {
                 <li key={index}>
                     <div className="messageData">
                         <p>
-                            {moment(message.date).format("MM/DD/YY hh:mm:ss a")}
+                            {moment(message.date).format("MM/DD/YY hh:mm a")}
                         </p>
                         {" "}
                         <p className="username">
