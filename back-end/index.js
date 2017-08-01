@@ -52,11 +52,27 @@ login.register(require("hapi-auth-jwt2"), function(err) {
     login.auth.default("jwt");
     login.route([
         {
-            method: "GET",
-            path: "/",
+            // This is where we will log in
+            // On the front-end react side you submit the form
+            // and it uses fetch() to post to this route
+            //
+            // And here it will be something like:
+            // if request.payload stuff === userinfo
+            // return jwt
+            method: "POST",
+            path: "/api/auth",
             config: { auth: false },
             handler: function(request, reply) {
-                reply({ text: "Token not required" });
+                console.log(request.payload);
+                return reply(request.payload);
+            }
+        },
+        {
+            method: "GET",
+            path: "/noauth",
+            config: { auth: false },
+            handler: function(request, reply) {
+                return reply.response({ test: "test" });
             }
         },
         {
