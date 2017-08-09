@@ -3,9 +3,11 @@ const Hapi = require("hapi");
 const Inert = require("inert");
 const path = require("path");
 const JWT = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+
+// const socketioJwt = require("socketio-jwt");
 
 var users = new Map();
-
 var server = new Hapi.Server({
     connections: {
         routes: {
@@ -15,17 +17,15 @@ var server = new Hapi.Server({
         }
     }
 });
-
 var people = {
     1: {
         id: 1,
         name: "Anthony Valid User"
     }
 };
-
 var token = JWT.sign(people[1], "nevershareyoursecret");
-console.log(token);
 
+console.log(token);
 var validate = function(decoded, request, callback) {
     console.log("validate");
     if (!people[decoded.id]) {
@@ -36,7 +36,6 @@ var validate = function(decoded, request, callback) {
         return callback(null, true);
     }
 };
-
 server.register(Inert, () => {});
 server.connection({ port: 8000, labels: "login" });
 const login = server.select("login");
@@ -63,8 +62,35 @@ login.register(require("hapi-auth-jwt2"), function(err) {
             path: "/api/auth",
             config: { auth: false },
             handler: function(request, reply) {
-                console.log(request.payload);
-                return reply(request.payload);
+                function authenticate(username, password) {
+                    bcrypt.compare(password, users.get("username"), function(
+                        err,
+                        res
+                    ) {
+                        if (true) {
+                            return reply({
+                                username: username,
+                                idtoken: token
+                            });
+                        } else {
+                            console.log(false);
+                            return reply(JSON.stringify({ idtoken: `${res}` }));
+                        }
+                    });
+                }
+                return authenticate(
+                    request.payload.username,
+                    request.payload.password
+                );
+            }
+        },
+        {
+            method: "POST",
+            path: "/api/auth/jwt",
+            handler: function(request, reply) {
+                // Use this function to return true or false based on if the jwt is good
+                // request.payload.idtoken;
+                reply({ isauthenticated: "false" });
             }
         },
         {
@@ -99,21 +125,46 @@ login.register(require("hapi-auth-jwt2"), function(err) {
 //     }
 // });
 
-// var io = require("socket.io")(server.listener);
+var io = require("socket.io")(login.listener);
 
-// var chatlogs = [];
+io.use(function(socket, next) {
+    const receivedToken = socket.handshake.query.token;
+    // console.log(token);
+    // make sure handshake looks good
+    JWT.verify(receivedToken, "nevershareyoursecret", function(err) {
+        if (err) {
+            console.log(err);
+            return next(new Error("Sorry, something went wrong."));
+        } else {
+            return next();
+        }
+    });
+    // if error do this
+    // next
+    // else just call next
+});
 
-// io.on("connection", function(socket) {
-//     io.emit("chat message", chatlogs);
-//     console.log("A user has connected");
-//     socket.on("chat message", function(msg) {
-//         chatlogs.push({
-//             date: new Date(),
-//             message: msg,
-//             username: "longer user name let's see how long"
-//         });
-//         io.emit("chat message", chatlogs);
-//         console.log("Message received");
-//     });
-// });
+// io.set(
+//     "authorization",
+//     socketioJwt.authorize({
+//         secret: "nevershareyoursecret",
+//         handshake: true
+//     })
+// );
+
+var chatlogs = [];
+
+io.on("connection", function(socket) {
+    io.emit("chat message", chatlogs);
+    console.log("A user has connected");
+    socket.on("chat message", function(msg) {
+        chatlogs.push({
+            date: new Date(),
+            message: msg,
+            username: "longer user name let's see how long"
+        });
+        io.emit("chat message", chatlogs);
+        console.log("Message received");
+    });
+});
 server.start();

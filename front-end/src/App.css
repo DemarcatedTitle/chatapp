@@ -111,6 +111,14 @@ a {
     margin: .5em;
 }
 
+.validationErr {
+    color: white;
+    background-color: red;
+    justify-content: left;
+
+}
+
+
 body {
     background-color: #262626;
 }

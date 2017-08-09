@@ -9,46 +9,48 @@ import {
 } from "react-router-dom";
 
 import ChatBox from "./ChatBox.js";
+import LoggedIn from "./LoggedIn.js";
 import Login from "./Login.js";
 import logo from "./logo.svg";
 import "./App.css";
-const io = require("socket.io-client");
-const socket = io("localhost:4000");
-
+function isAuthenticated() {
+    if (
+        localStorage.getStore("idtoken") !== "undefined" ||
+        localStorage.getStore("idtoken") !== null
+    ) {
+        return true;
+    } else {
+        return false;
+    }
+}
 let loggedIn = window.localStorage.getItem("id_token");
-// onClick={window.localStorage.clear()}
-const LoggedIn = () => {
-    return loggedIn
-        ? <li>
-              <button
-                  onClick={function() {
-                      loggedIn = false;
-                      myAuth.isAuthenticated = false;
-                      window.localStorage.clear();
-                      return <Redirect push to="/login" />;
-                  }}
-              >
-                  Sign out of {loggedIn}
-              </button>
-          </li>
-        : <li><Link to="/login">Log in</Link></li>;
-};
-
-// <li><Link to="/login">Log in</Link></li>
 const BasicExample = () => (
     <Router>
         <div>
             <ul className="App-header">
                 <li><Link to="/">Home</Link></li>
                 <li><Link to="/auth">Auth</Link></li>
-                <LoggedIn />
+                <LoggedIn loggedIn={window.localStorage.getItem("username")} />
             </ul>
 
             <hr />
             <Route exact path="/login" component={Login} />
-            <PrivateRoute exact path="/" component={ChatBox} />
-            <PrivateRoute path="/auth" component={ChatBox} />
-            <PrivateRoute path="localhost:3000/" component={ChatBox} />
+            <PrivateRoute
+                loggedIn={localStorage.getItem("idtoken") !== null}
+                exact
+                path="/"
+                component={ChatBox}
+            />
+            <PrivateRoute
+                loggedIn={localStorage.getItem("idtoken") !== null}
+                path="/auth"
+                component={ChatBox}
+            />
+            <PrivateRoute
+                loggedIn={localStorage.getItem("idtoken") !== null}
+                path="localhost:3000/"
+                component={ChatBox}
+            />
         </div>
     </Router>
 );
@@ -56,12 +58,26 @@ let myAuth = { isAuthenticated: false };
 if (loggedIn) {
     myAuth.isAuthenticated = true;
 }
+// function isAuthenticated() {
+//     fetch("/api/auth/jwt", {
+//         method: "POST",
+//         headers: {
+//             "Content-Type": "application/json"
+//         },
+//         body: JSON.stringify(localStorage.getItem("idtoken")),
+//         credentials: "same-origin"
+//     }).then(response => {
+//         response.json().then(data => {
+//             return data.authenticated;
+//         });
+//     });
+// }
 
-const PrivateRoute = ({ component: Component, ...rest }) => (
+const PrivateRoute = ({ component: Component, loggedIn, ...rest }) => (
     <Route
         {...rest}
         render={props =>
-            (myAuth.isAuthenticated
+            (loggedIn === true
                 ? <Component {...props} />
                 : <Redirect
                       to={{
@@ -70,22 +86,21 @@ const PrivateRoute = ({ component: Component, ...rest }) => (
                   />)}
     />
 );
-
 // <Route exact path="/" component={ChatBox} />
 class App extends Component {
     handleClick(event) {
         // socket.emit("chat message", this.input.value);
-        socket.emit("chat message", "A message was submitted");
+        // socket.emit("chat message", "A message was submitted");
     }
     handleSubmit(event) {
         event.preventDefault();
-        socket.emit("chat message", "A message was submitted");
+        // socket.emit("chat message", "A message was submitted");
     }
     render() {
         return (
             <div className="App">
                 <div>
-                    <BasicExample />
+                    <BasicExample loggedIn={this.props.loggedIn} />
                 </div>
             </div>
         );

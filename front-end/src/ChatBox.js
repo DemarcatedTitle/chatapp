@@ -2,7 +2,11 @@
 import React from "react";
 import moment from "moment";
 const io = require("socket.io-client");
-const socket = io("localhost:4000");
+const socket = io("localhost:8000", {
+    query: {
+        token: localStorage.getItem("idtoken")
+    }
+});
 class ChatBox extends React.PureComponent {
     constructor(props) {
         super(props);
@@ -11,6 +15,9 @@ class ChatBox extends React.PureComponent {
         this.handleChange = this.handleChange.bind(this);
         socket.on("chat message", messages => {
             this.updateChatlogs(messages);
+        });
+        socket.on("error", error => {
+            console.log(error);
         });
     }
     updateChatlogs(messages) {

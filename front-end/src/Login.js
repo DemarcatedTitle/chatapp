@@ -13,7 +13,7 @@ function checkStatus(response) {
 class Login extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { username: "", password: "" };
+        this.state = { username: "", password: "", redirectToReferrer: false };
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleClick = this.handleClick.bind(this);
@@ -27,7 +27,6 @@ class Login extends React.Component {
     }
     handleSubmit(event) {
         event.preventDefault();
-        console.log("form submitted");
         fetch("/api/auth", {
             method: "POST",
             headers: {
@@ -35,9 +34,18 @@ class Login extends React.Component {
             },
             body: JSON.stringify(this.state),
             credentials: "same-origin"
-        }).then(function(response) {
-            response.json().then(function(data) {
-                window.localStorage.setItem("id_token", data.username);
+        }).then(response => {
+            response.json().then(data => {
+                if (data.idtoken !== "undefined") {
+                    window.localStorage.setItem("idtoken", data.idtoken);
+                    window.localStorage.setItem("username", data.username);
+                    return this.setState({ redirectToReferrer: true });
+                } else {
+                    console.log(
+                        "That username/password combination didn't match our records"
+                    );
+                    return this.setState({ wrongPass: true });
+                }
             });
         });
     }
@@ -52,6 +60,7 @@ class Login extends React.Component {
         // fetch("/noauth").then(function(response) {
         //     console.log(response);
         // });
+        const wrongPass = this.state.wrongPass;
         return (
             <div>
                 <form onSubmit={this.handleSubmit} className="login" action="">
@@ -71,6 +80,11 @@ class Login extends React.Component {
                         <button>Login</button>
                     </div>
                 </form>
+                {wrongPass
+                    ? <p className="validationErr">
+                          "That username/password combination didn't match our records"
+                      </p>
+                    : ""}
                 <button onClick={this.handleClick}>
                     Log Storage
                 </button>
