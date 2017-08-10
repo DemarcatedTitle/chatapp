@@ -24,60 +24,104 @@ function isAuthenticated() {
     }
 }
 let loggedIn = window.localStorage.getItem("id_token");
-const BasicExample = () => (
-    <Router>
-        <div>
-            <ul className="App-header">
-                <li><Link to="/">Home</Link></li>
-                <li><Link to="/auth">Auth</Link></li>
-                <LoggedIn loggedIn={window.localStorage.getItem("username")} />
-            </ul>
+class BasicExample extends Component {
+    constructor(props) {
+        super(props);
+        const loggedIn = localStorage.getItem("idtoken") !== null
+            ? true
+            : false;
+        this.state = { loggedIn: loggedIn };
+        this.logout = this.logout.bind(this);
+        this.login = this.login.bind(this);
+    }
 
-            <hr />
-            <Route exact path="/login" component={Login} />
-            <PrivateRoute
-                loggedIn={localStorage.getItem("idtoken") !== null}
-                exact
-                path="/"
-                component={ChatBox}
-            />
-            <PrivateRoute
-                loggedIn={localStorage.getItem("idtoken") !== null}
-                path="/auth"
-                component={ChatBox}
-            />
-            <PrivateRoute
-                loggedIn={localStorage.getItem("idtoken") !== null}
-                path="localhost:3000/"
-                component={ChatBox}
-            />
-        </div>
-    </Router>
-);
-let myAuth = { isAuthenticated: false };
-if (loggedIn) {
-    myAuth.isAuthenticated = true;
+    logout() {
+        let history = this.props.history;
+        window.localStorage.clear();
+        return this.setState({ loggedIn: false });
+        // return history.push("/");
+    }
+    login(event, creds) {
+        event.preventDefault();
+        fetch("/api/auth", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(creds),
+            credentials: "same-origin"
+        }).then(response => {
+            response.json().then(data => {
+                if (data.idtoken !== "undefined") {
+                    window.localStorage.setItem("idtoken", data.idtoken);
+                    window.localStorage.setItem("username", data.username);
+                    console.log(this);
+                    return this.setState({ loggedIn: true });
+                } else {
+                    console.log(
+                        "That username/password combination didn't match our records"
+                    );
+                    return this.setState({ wrongPass: true });
+                }
+            });
+        });
+    }
+
+    render() {
+        const login = this.login;
+        return (
+            <Router>
+                <div>
+                    <ul className="App-header">
+                        <li>
+                            this.state.loggedIn:
+                            {" "}
+                            {this.state.loggedIn.toString()}
+                            {" "}
+                        </li>
+                        <li><Link to="/">Home</Link></li>
+                        <li><Link to="/auth">Auth</Link></li>
+                        <LoggedIn
+                            logout={this.logout}
+                            loggedIn={this.state.loggedIn}
+                        />
+                    </ul>
+
+                    <hr />
+                    <Route
+                        exact
+                        path="/login"
+                        render={routeProps => (
+                            <Login {...routeProps} login={login} />
+                        )}
+                    />
+                    <PrivateRoute
+                        loggedIn={this.state.loggedIn}
+                        exact
+                        path="/"
+                        component={ChatBox}
+                    />
+                    <PrivateRoute
+                        loggedIn={this.state.loggedIn}
+                        path="/auth"
+                        component={ChatBox}
+                    />
+                    <PrivateRoute
+                        loggedIn={this.state.loggedIn}
+                        path="localhost:3000/"
+                        component={ChatBox}
+                    />
+                </div>
+            </Router>
+        );
+    }
 }
-// function isAuthenticated() {
-//     fetch("/api/auth/jwt", {
-//         method: "POST",
-//         headers: {
-//             "Content-Type": "application/json"
-//         },
-//         body: JSON.stringify(localStorage.getItem("idtoken")),
-//         credentials: "same-origin"
-//     }).then(response => {
-//         response.json().then(data => {
-//             return data.authenticated;
-//         });
-//     });
-// }
 
 const PrivateRoute = ({ component: Component, loggedIn, ...rest }) => (
     <Route
         {...rest}
         render={props =>
-            (loggedIn === true
+            (localStorage.getItem("idtoken") !== null
                 ? <Component {...props} />
                 : <Redirect
                       to={{
@@ -86,15 +130,10 @@ const PrivateRoute = ({ component: Component, loggedIn, ...rest }) => (
                   />)}
     />
 );
-// <Route exact path="/" component={ChatBox} />
 class App extends Component {
-    handleClick(event) {
-        // socket.emit("chat message", this.input.value);
-        // socket.emit("chat message", "A message was submitted");
-    }
+    handleClick(event) {}
     handleSubmit(event) {
         event.preventDefault();
-        // socket.emit("chat message", "A message was submitted");
     }
     render() {
         return (

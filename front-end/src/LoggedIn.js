@@ -9,9 +9,8 @@ import {
     Redirect
 } from "react-router-dom";
 import { withRouter } from "react-router";
-// onClick={window.localStorage.clear()}
-// <li><Link to="/login">Log in</Link></li>
-class LoggedIn extends React.Component {
+class LoggedIn extends React.PureComponent {
+    /* eslint-disable-next-line */
     static PropTypes = {
         match: PropTypes.object.isRequired,
         location: PropTypes.object.isRequired,
@@ -19,29 +18,23 @@ class LoggedIn extends React.Component {
     };
     constructor(props) {
         super(props);
-        this.state = { loggedIn: this.props.loggedIn };
-        this.logout = this.logout.bind(this);
-    }
-    compoenentDidMount() {
-        console.log(this.props.loggedIn);
-        this.setState({ loggedIn: localStorage.getItem("idtoken") });
+        // this.state = { loggedIn: this.props.loggedIn };
     }
     logout() {
-        const history = this.props.history;
-        this.setState({ loggedIn: null });
+        let history = this.props.history;
+        // this.setState({ loggedIn: null });
         window.localStorage.clear();
         return history.push("/");
     }
     render() {
-        console.log(this.state);
-        let loggedIn = this.state.loggedIn;
-        if (loggedIn === null) {
+        if (this.props.loggedIn === false) {
+            console.log(` logged in props loggedin: ${this.props.loggedIn}`);
             return <li><Link to="/login">Log in</Link></li>;
         } else {
             return (
                 <li>
-                    <button onClick={this.logout}>
-                        Sign out of {loggedIn}
+                    <button onClick={this.props.logout}>
+                        Sign out of {localStorage.getItem("username")}
                     </button>
                 </li>
             );

@@ -6,6 +6,7 @@ const JWT = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 // const socketioJwt = require("socketio-jwt");
+const secret = "nevershareyoursecret";
 
 var users = new Map();
 var server = new Hapi.Server({
@@ -23,11 +24,12 @@ var people = {
         name: "Anthony Valid User"
     }
 };
-var token = JWT.sign(people[1], "nevershareyoursecret");
+var token = JWT.sign(people[1], secret);
 
 console.log(token);
 var validate = function(decoded, request, callback) {
     console.log("validate");
+    console.log(decoded);
     if (!people[decoded.id]) {
         console.log("null, false");
         return callback(null, false);
@@ -44,7 +46,7 @@ login.register(require("hapi-auth-jwt2"), function(err) {
         console.log(err);
     }
     login.auth.strategy("jwt", "jwt", {
-        key: "NeverShareYourSecret",
+        key: secret,
         validateFunc: validate,
         verifyOptions: { ignoreExpiration: true }
     });
@@ -85,12 +87,12 @@ login.register(require("hapi-auth-jwt2"), function(err) {
             }
         },
         {
-            method: "POST",
+            method: "GET",
             path: "/api/auth/jwt",
             handler: function(request, reply) {
                 // Use this function to return true or false based on if the jwt is good
                 // request.payload.idtoken;
-                reply({ isauthenticated: "false" });
+                reply({ text: "success" });
             }
         },
         {
@@ -103,13 +105,14 @@ login.register(require("hapi-auth-jwt2"), function(err) {
         },
         {
             method: "GET",
-            path: "/restricted",
+            path: "/api/restricted",
             config: { auth: "jwt" },
             handler: function(request, reply) {
-                reply({ message: "You used a valid token" }).header(
-                    "Authorization",
-                    request.headers.authorization
-                );
+                reply("success");
+                // reply({ message: "You used a valid token" }).header(
+                //     "Authorization",
+                //     request.headers.authorization
+                // );
             }
         }
     ]);
@@ -131,7 +134,7 @@ io.use(function(socket, next) {
     const receivedToken = socket.handshake.query.token;
     // console.log(token);
     // make sure handshake looks good
-    JWT.verify(receivedToken, "nevershareyoursecret", function(err) {
+    JWT.verify(receivedToken, secret, function(err) {
         if (err) {
             console.log(err);
             return next(new Error("Sorry, something went wrong."));
@@ -147,7 +150,7 @@ io.use(function(socket, next) {
 // io.set(
 //     "authorization",
 //     socketioJwt.authorize({
-//         secret: "nevershareyoursecret",
+//         secret: secret,
 //         handshake: true
 //     })
 // );

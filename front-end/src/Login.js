@@ -15,7 +15,7 @@ class Login extends React.Component {
         super(props);
         this.state = { username: "", password: "", redirectToReferrer: false };
         this.handleChange = this.handleChange.bind(this);
-        this.handleSubmit = this.handleSubmit.bind(this);
+        this.login = this.props.login.bind(this);
         this.handleClick = this.handleClick.bind(this);
     }
     handleChange(event) {
@@ -23,7 +23,9 @@ class Login extends React.Component {
         this.setState({ [event.target.name]: event.target.value });
     }
     handleClick(event) {
-        console.log(JSON.stringify(window.localStorage.getItem("id_token")));
+        console.log(
+            `idtoken: ${JSON.stringify(window.localStorage.getItem("idtoken"))}`
+        );
     }
     handleSubmit(event) {
         event.preventDefault();
@@ -50,46 +52,47 @@ class Login extends React.Component {
         });
     }
     render() {
+        const wrongPass = this.state.wrongPass;
         const { from } = this.props.location.state || {
             from: { pathname: "/" }
         };
-        const { redirectToReferrer } = this.state;
-        if (redirectToReferrer) {
-            return <Redirect to={from} />;
+        if (this.state.redirectToReferrer) {
+            return <Redirect to={{ pathname: "/auth" }} />;
+        } else {
+            return (
+                <div>
+                    <form
+                        onSubmit={this.props.login}
+                        className="login"
+                        action=""
+                    >
+                        <div>
+                            <label htmlFor="username">Username</label>
+                            <input
+                                name="username"
+                                onChange={this.handleChange}
+                                type="username"
+                            />
+                            <label htmlFor="password">Password</label>
+                            <input
+                                name="password"
+                                onChange={this.handleChange}
+                                type="password"
+                            />
+                            <button>Login</button>
+                        </div>
+                    </form>
+                    {wrongPass
+                        ? <p className="validationErr">
+                              "That username/password combination didn't match our records"
+                          </p>
+                        : ""}
+                    <button onClick={this.handleClick}>
+                        Log Storage
+                    </button>
+                </div>
+            );
         }
-        // fetch("/noauth").then(function(response) {
-        //     console.log(response);
-        // });
-        const wrongPass = this.state.wrongPass;
-        return (
-            <div>
-                <form onSubmit={this.handleSubmit} className="login" action="">
-                    <div>
-                        <label htmlFor="username">Username</label>
-                        <input
-                            name="username"
-                            onChange={this.handleChange}
-                            type="username"
-                        />
-                        <label htmlFor="password">Password</label>
-                        <input
-                            name="password"
-                            onChange={this.handleChange}
-                            type="password"
-                        />
-                        <button>Login</button>
-                    </div>
-                </form>
-                {wrongPass
-                    ? <p className="validationErr">
-                          "That username/password combination didn't match our records"
-                      </p>
-                    : ""}
-                <button onClick={this.handleClick}>
-                    Log Storage
-                </button>
-            </div>
-        );
     }
 }
 export default Login;
