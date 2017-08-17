@@ -41,7 +41,23 @@ ul {
     height: min-content;
     background-color: #303030;
 }
+.loginContainer {
+    background-color: orange;
+    display: flex;
+    align-items: center;
+    align-content: center;
+    flex-flow: wrap;
+    justify-content: center;
+    position: relative;
+    width: 200px;
+    height: auto;
+
+}
+.loginContainer :nth-child(1n) {
+    margin: .5em
+}
 form { 
+    justify-content: center;
     max-width: 800px;
     display: flex;
 }
@@ -97,18 +113,17 @@ a {
 }
 
 .login {
-    align-items: center;
-    align-content: center;
-    flex-flow: wrap;
-    justify-content: center;
-    position: relative;
-    background-color: orange;
-    display: flex;
-    width: 200px;
-    height: 12em;
+    /* align-items: center; */
+    /* align-content: center; */
+    /* flex-flow: wrap; */
+    /* justify-content: center; */
+    /* position: relative; */
+    /* display: flex; */
+    /* width: 200px; */
+    /* height: 12em; */
 }
 .login div :nth-child(1n) {
-    margin: .5em;
+    /* margin: .5em; */
 }
 
 .validationErr {

@@ -23,73 +23,77 @@ class Login extends React.Component {
         this.setState({ [event.target.name]: event.target.value });
     }
     handleClick(event) {
-        console.log(
-            `idtoken: ${JSON.stringify(window.localStorage.getItem("idtoken"))}`
-        );
-    }
-    handleSubmit(event) {
+        // console.log(
+        //     `idtoken: ${JSON.stringify(window.localStorage.getItem("idtoken"))}`
+        // );
         event.preventDefault();
-        fetch("/api/auth", {
+        fetch("/api/register", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(this.state),
+            body: JSON.stringify({
+                username: this.state.username,
+                password: this.state.password
+            }),
             credentials: "same-origin"
         }).then(response => {
             response.json().then(data => {
-                if (data.idtoken !== "undefined") {
-                    window.localStorage.setItem("idtoken", data.idtoken);
-                    window.localStorage.setItem("username", data.username);
-                    return this.setState({ redirectToReferrer: true });
+                if (data.text === "success") {
+                    this.setState({ registered: true });
                 } else {
-                    console.log(
-                        "That username/password combination didn't match our records"
-                    );
-                    return this.setState({ wrongPass: true });
+                    this.setState({ error: data.message });
                 }
             });
         });
     }
     render() {
-        const wrongPass = this.state.wrongPass;
         const { from } = this.props.location.state || {
             from: { pathname: "/" }
         };
-        if (this.state.redirectToReferrer) {
+        if (this.props.loggedIn) {
             return <Redirect to={{ pathname: "/auth" }} />;
         } else {
             return (
                 <div>
-                    <form
-                        onSubmit={this.props.login}
-                        className="login"
-                        action=""
-                    >
-                        <div>
-                            <label htmlFor="username">Username</label>
-                            <input
-                                name="username"
-                                onChange={this.handleChange}
-                                type="username"
-                            />
-                            <label htmlFor="password">Password</label>
-                            <input
-                                name="password"
-                                onChange={this.handleChange}
-                                type="password"
-                            />
-                            <button>Login</button>
-                        </div>
-                    </form>
-                    {wrongPass
-                        ? <p className="validationErr">
-                              "That username/password combination didn't match our records"
-                          </p>
-                        : ""}
-                    <button onClick={this.handleClick}>
-                        Log Storage
-                    </button>
+                    <div className="loginContainer">
+                        <form
+                            onSubmit={this.props.login}
+                            className="login"
+                            action=""
+                        >
+                            <div>
+                                <label htmlFor="username">Username</label>
+                                <input
+                                    autoComplete="off"
+                                    name="username"
+                                    onChange={this.handleChange}
+                                    type="username"
+                                />
+                                <label htmlFor="password">Password</label>
+                                <input
+                                    autoComplete="off"
+                                    name="password"
+                                    onChange={this.handleChange}
+                                    type="password"
+                                />
+                                <button>Login</button>
+                                {this.state.error
+                                    ? <p className="">
+                                          {this.state.error}
+                                      </p>
+                                    : ""}
+                                {this.state.registered
+                                    ? <p className="">
+                                          You are now registered, try logging in.
+                                      </p>
+                                    : ""}
+                                <button onClick={this.handleClick}>
+                                    Register
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             );
         }

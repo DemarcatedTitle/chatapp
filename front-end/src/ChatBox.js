@@ -2,30 +2,24 @@
 import React from "react";
 import moment from "moment";
 const io = require("socket.io-client");
-const socket = io("localhost:8000", {
-    query: {
-        token: localStorage.getItem("idtoken")
-    }
-});
+// const socket = io("localhost:8000", {
+//     query: {
+//         token: localStorage.getItem("idtoken")
+//     }
+// });
 class ChatBox extends React.PureComponent {
     constructor(props) {
         super(props);
         this.state = { message: "", chatlogs: [] };
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleChange = this.handleChange.bind(this);
-        socket.on("chat message", messages => {
-            this.updateChatlogs(messages);
-        });
-        socket.on("error", error => {
-            console.log(error);
-        });
     }
     updateChatlogs(messages) {
         this.setState({ chatlogs: messages });
     }
     handleSubmit(event) {
         event.preventDefault();
-        socket.emit("chat message", this.state.message);
+        this.props.socket.emit("chat message", this.state.message);
         this.setState({ message: "" });
         document.getElementById("endOfMessages").scrollIntoView();
     }
@@ -36,11 +30,14 @@ class ChatBox extends React.PureComponent {
         document.getElementById("endOfMessages").scrollIntoView();
     }
     componentDidMount() {
-        // window.addEventListener("keydown", this.handleKeyPress);
+        this.props.socket.on("chat message", messages => {
+            this.updateChatlogs(messages);
+        });
+        this.props.socket.on("error", error => {
+            console.log(error);
+        });
     }
-    componentWillUnmount() {
-        // window.removeEventListener("keydown", this.handleKeyPress);
-    }
+    componentWillUnmount() {}
     render() {
         let chatlogs = this.state.chatlogs.map(function(message, index) {
             return (

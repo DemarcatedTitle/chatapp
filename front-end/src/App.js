@@ -13,6 +13,12 @@ import LoggedIn from "./LoggedIn.js";
 import Login from "./Login.js";
 import logo from "./logo.svg";
 import "./App.css";
+const io = require("socket.io-client");
+const socket = io("localhost:8000", {
+    query: {
+        token: localStorage.getItem("idtoken")
+    }
+});
 function isAuthenticated() {
     if (
         localStorage.getStore("idtoken") !== "undefined" ||
@@ -55,7 +61,6 @@ class BasicExample extends Component {
                 if (data.idtoken !== "undefined") {
                     window.localStorage.setItem("idtoken", data.idtoken);
                     window.localStorage.setItem("username", data.username);
-                    console.log(this);
                     return this.setState({ loggedIn: true });
                 } else {
                     console.log(
@@ -92,22 +97,29 @@ class BasicExample extends Component {
                         exact
                         path="/login"
                         render={routeProps => (
-                            <Login {...routeProps} login={login} />
+                            <Login
+                                {...routeProps}
+                                loggedIn={this.state.loggedIn}
+                                login={login}
+                            />
                         )}
                     />
                     <PrivateRoute
                         loggedIn={this.state.loggedIn}
+                        socket={socket}
                         exact
                         path="/"
                         component={ChatBox}
                     />
                     <PrivateRoute
                         loggedIn={this.state.loggedIn}
+                        socket={socket}
                         path="/auth"
                         component={ChatBox}
                     />
                     <PrivateRoute
                         loggedIn={this.state.loggedIn}
+                        socket={socket}
                         path="localhost:3000/"
                         component={ChatBox}
                     />
@@ -117,12 +129,12 @@ class BasicExample extends Component {
     }
 }
 
-const PrivateRoute = ({ component: Component, loggedIn, ...rest }) => (
+const PrivateRoute = ({ component: Component, socket, loggedIn, ...rest }) => (
     <Route
         {...rest}
         render={props =>
-            (localStorage.getItem("idtoken") !== null
-                ? <Component {...props} />
+            (loggedIn
+                ? <Component socket={socket} {...props} />
                 : <Redirect
                       to={{
                           pathname: "/login"

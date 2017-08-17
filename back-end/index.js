@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 const Hapi = require("hapi");
+const Joi = require("joi");
 const Inert = require("inert");
 const path = require("path");
 const JWT = require("jsonwebtoken");
@@ -24,9 +25,8 @@ var people = {
         name: "Anthony Valid User"
     }
 };
-var token = JWT.sign(people[1], secret);
+var token = JWT.sign(people[1], secret, { expiresIn: 60 });
 
-console.log(token);
 var validate = function(decoded, request, callback) {
     console.log("validate");
     console.log(decoded);
@@ -47,11 +47,45 @@ login.register(require("hapi-auth-jwt2"), function(err) {
     }
     login.auth.strategy("jwt", "jwt", {
         key: secret,
-        validateFunc: validate,
-        verifyOptions: { ignoreExpiration: true }
+        validateFunc: validate
     });
     login.auth.default("jwt");
     login.route([
+        {
+            // This is where we will log in
+            // On the front-end react side you submit the form
+            // and it uses fetch() to post to this route
+            //
+            // And here it will be something like:
+            // if request.payload stuff === userinfo
+            // return jwt
+            method: "POST",
+            path: "/api/register",
+            config: {
+                auth: false,
+                validate: {
+                    payload: {
+                        username: Joi.string().min(3).max(76),
+                        password: Joi.string().min(6)
+                    }
+                }
+            },
+            handler: function(request, reply) {
+                console.log(request.payload);
+                bcrypt.hash(request.payload.password, 10, function(err, hash) {
+                    if (err) {
+                        reply(err);
+                    } else {
+                        users.set({
+                            password: hash,
+                            username: request.payload.username
+                        });
+                        console.log(users);
+                        reply({ text: "success" });
+                    }
+                });
+            }
+        },
         {
             // This is where we will log in
             // On the front-end react side you submit the form
@@ -65,20 +99,25 @@ login.register(require("hapi-auth-jwt2"), function(err) {
             config: { auth: false },
             handler: function(request, reply) {
                 function authenticate(username, password) {
-                    bcrypt.compare(password, users.get("username"), function(
-                        err,
-                        res
-                    ) {
-                        if (true) {
-                            return reply({
-                                username: username,
-                                idtoken: token
-                            });
-                        } else {
-                            console.log(false);
-                            return reply(JSON.stringify({ idtoken: `${res}` }));
+                    bcrypt.compare(
+                        password,
+                        users.get(request.payload.username).password,
+                        function(err, res) {
+                            if (res === true) {
+                                return reply({
+                                    username: username,
+                                    idtoken: token
+                                });
+                            } else {
+                                console.log(users);
+                                console.log(request.payload.password);
+                                console.log(false);
+                                return reply(
+                                    JSON.stringify({ idtoken: `${res}` })
+                                );
+                            }
                         }
-                    });
+                    );
                 }
                 return authenticate(
                     request.payload.username,
@@ -109,65 +148,43 @@ login.register(require("hapi-auth-jwt2"), function(err) {
             config: { auth: "jwt" },
             handler: function(request, reply) {
                 reply("success");
-                // reply({ message: "You used a valid token" }).header(
-                //     "Authorization",
-                //     request.headers.authorization
-                // );
             }
         }
     ]);
 });
-// server.connection({ port: 4000, labels: "socket.io" });
-
-// const socketio = server.select("socket.io");
-// socketio.route({
-//     method: "GET",
-//     path: "/",
-//     handler: function(request, reply) {
-//         reply.file("index.html");
-//     }
-// });
 
 var io = require("socket.io")(login.listener);
 
 io.use(function(socket, next) {
     const receivedToken = socket.handshake.query.token;
-    // console.log(token);
-    // make sure handshake looks good
     JWT.verify(receivedToken, secret, function(err) {
         if (err) {
-            console.log(err);
+            console.log("io.use \n" + err);
             return next(new Error("Sorry, something went wrong."));
         } else {
             return next();
         }
     });
-    // if error do this
-    // next
-    // else just call next
 });
-
-// io.set(
-//     "authorization",
-//     socketioJwt.authorize({
-//         secret: secret,
-//         handshake: true
-//     })
-// );
 
 var chatlogs = [];
 
 io.on("connection", function(socket) {
-    io.emit("chat message", chatlogs);
-    console.log("A user has connected");
+    let userToken = socket.handshake.query.token;
+    io.emit("chat message", chatlogs.slice(-10));
+    JWT.verify(userToken, secret, function(err, decoded) {
+        console.log(`${decoded.name} has connected`);
+    });
     socket.on("chat message", function(msg) {
-        chatlogs.push({
-            date: new Date(),
-            message: msg,
-            username: "longer user name let's see how long"
+        JWT.verify(userToken, secret, function(err, decoded) {
+            chatlogs.push({
+                date: new Date(),
+                message: msg,
+                username: decoded.name
+            });
+            io.emit("chat message", chatlogs);
+            console.log("Message received");
         });
-        io.emit("chat message", chatlogs);
-        console.log("Message received");
     });
 });
 server.start();
