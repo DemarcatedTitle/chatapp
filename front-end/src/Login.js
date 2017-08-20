@@ -17,10 +17,19 @@ class Login extends React.Component {
         this.handleChange = this.handleChange.bind(this);
         this.login = this.props.login.bind(this);
         this.handleClick = this.handleClick.bind(this);
+        this.handleSubmit = this.handleSubmit.bind(this);
     }
     handleChange(event) {
         const fieldName = event.target.type;
         this.setState({ [event.target.name]: event.target.value });
+    }
+    handleSubmit(event) {
+        event.preventDefault();
+        const creds = {
+            username: this.state.username,
+            password: this.state.password
+        };
+        this.props.login(event, creds);
     }
     handleClick(event) {
         // console.log(
@@ -48,6 +57,10 @@ class Login extends React.Component {
         });
     }
     render() {
+        let creds = {
+            username: this.state.username,
+            password: this.state.password
+        };
         const { from } = this.props.location.state || {
             from: { pathname: "/" }
         };
@@ -58,7 +71,7 @@ class Login extends React.Component {
                 <div>
                     <div className="loginContainer">
                         <form
-                            onSubmit={this.props.login}
+                            onSubmit={this.handleSubmit}
                             className="login"
                             action=""
                         >

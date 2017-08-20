@@ -16,10 +16,10 @@ class LoggedIn extends React.PureComponent {
         location: PropTypes.object.isRequired,
         history: PropTypes.object.isRequired
     };
-    constructor(props) {
-        super(props);
-        // this.state = { loggedIn: this.props.loggedIn };
-    }
+    // constructor(props) {
+    //     super(props);
+    //     // this.state = { loggedIn: this.props.loggedIn };
+    // }
     logout() {
         let history = this.props.history;
         // this.setState({ loggedIn: null });
@@ -28,7 +28,6 @@ class LoggedIn extends React.PureComponent {
     }
     render() {
         if (this.props.loggedIn === false) {
-            console.log(` logged in props loggedin: ${this.props.loggedIn}`);
             return <li><Link to="/login">Log in</Link></li>;
         } else {
             return (

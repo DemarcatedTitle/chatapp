@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import React from "react";
 import moment from "moment";
-const io = require("socket.io-client");
+// const io = require("socket.io-client");
 // const socket = io("localhost:8000", {
 //     query: {
 //         token: localStorage.getItem("idtoken")
@@ -29,17 +29,9 @@ class ChatBox extends React.PureComponent {
     componentDidUpdate() {
         document.getElementById("endOfMessages").scrollIntoView();
     }
-    componentDidMount() {
-        this.props.socket.on("chat message", messages => {
-            this.updateChatlogs(messages);
-        });
-        this.props.socket.on("error", error => {
-            console.log(error);
-        });
-    }
     componentWillUnmount() {}
     render() {
-        let chatlogs = this.state.chatlogs.map(function(message, index) {
+        let chatlogs = this.props.chatlogs.map(function(message, index) {
             return (
                 <li key={index}>
                     <div className="messageData">
@@ -66,6 +58,7 @@ class ChatBox extends React.PureComponent {
                 </ul>
                 <form onSubmit={this.handleSubmit}>
                     <input
+                        autoComplete="off"
                         value={this.state.message}
                         onChange={this.handleChange}
                         type="text"

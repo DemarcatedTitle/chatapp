@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 const Hapi = require("hapi");
+const Boom = require("boom");
 const Joi = require("joi");
 const Inert = require("inert");
 const path = require("path");
@@ -19,22 +20,12 @@ var server = new Hapi.Server({
         }
     }
 });
-var people = {
-    1: {
-        id: 1,
-        name: "Anthony Valid User"
-    }
-};
-var token = JWT.sign(people[1], secret, { expiresIn: 60 });
 
 var validate = function(decoded, request, callback) {
-    console.log("validate");
     console.log(decoded);
-    if (!people[decoded.id]) {
-        console.log("null, false");
+    if (!users[decoded.username]) {
         return callback(null, false);
     } else {
-        console.log("null, true");
         return callback(null, true);
     }
 };
@@ -42,9 +33,8 @@ server.register(Inert, () => {});
 server.connection({ port: 8000, labels: "login" });
 const login = server.select("login");
 login.register(require("hapi-auth-jwt2"), function(err) {
-    if (err) {
-        console.log(err);
-    }
+    // if (err) {
+    // }
     login.auth.strategy("jwt", "jwt", {
         key: secret,
         validateFunc: validate
@@ -76,7 +66,7 @@ login.register(require("hapi-auth-jwt2"), function(err) {
                     if (err) {
                         reply(err);
                     } else {
-                        users.set({
+                        users.set(request.payload.username, {
                             password: hash,
                             username: request.payload.username
                         });
@@ -98,6 +88,14 @@ login.register(require("hapi-auth-jwt2"), function(err) {
             path: "/api/auth",
             config: { auth: false },
             handler: function(request, reply) {
+                console.log(
+                    `request.payload: ${JSON.stringify(request.payload)}`
+                );
+                var token = JWT.sign(
+                    { username: request.payload.username },
+                    secret,
+                    { expiresIn: 60 }
+                );
                 function authenticate(username, password) {
                     bcrypt.compare(
                         password,
@@ -109,11 +107,10 @@ login.register(require("hapi-auth-jwt2"), function(err) {
                                     idtoken: token
                                 });
                             } else {
-                                console.log(users);
-                                console.log(request.payload.password);
-                                console.log(false);
                                 return reply(
-                                    JSON.stringify({ idtoken: `${res}` })
+                                    Boom.unauthorized(
+                                        "Something went wrong, please try logging in"
+                                    )
                                 );
                             }
                         }
@@ -160,7 +157,9 @@ io.use(function(socket, next) {
     JWT.verify(receivedToken, secret, function(err) {
         if (err) {
             console.log("io.use \n" + err);
-            return next(new Error("Sorry, something went wrong."));
+            return next(
+                new Error("Sorry, something went wrong. Please try logging in.")
+            );
         } else {
             return next();
         }
@@ -173,17 +172,22 @@ io.on("connection", function(socket) {
     let userToken = socket.handshake.query.token;
     io.emit("chat message", chatlogs.slice(-10));
     JWT.verify(userToken, secret, function(err, decoded) {
-        console.log(`${decoded.name} has connected`);
+        console.log(`${decoded.username} has connected`);
     });
     socket.on("chat message", function(msg) {
         JWT.verify(userToken, secret, function(err, decoded) {
-            chatlogs.push({
-                date: new Date(),
-                message: msg,
-                username: decoded.name
-            });
-            io.emit("chat message", chatlogs);
-            console.log("Message received");
+            if (err) {
+                io.emit("error", "Something went wrong, please try logging in");
+            } else {
+                chatlogs.push({
+                    date: new Date(),
+                    message: msg,
+                    username: decoded.username
+                });
+                console.log(chatlogs);
+                io.emit("chat message", chatlogs);
+                console.log("Message received");
+            }
         });
     });
 });

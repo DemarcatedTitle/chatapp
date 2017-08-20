@@ -14,11 +14,7 @@ import Login from "./Login.js";
 import logo from "./logo.svg";
 import "./App.css";
 const io = require("socket.io-client");
-const socket = io("localhost:8000", {
-    query: {
-        token: localStorage.getItem("idtoken")
-    }
-});
+let socket;
 function isAuthenticated() {
     if (
         localStorage.getStore("idtoken") !== "undefined" ||
@@ -29,16 +25,26 @@ function isAuthenticated() {
         return false;
     }
 }
-let loggedIn = window.localStorage.getItem("id_token");
+// let loggedIn = window.localStorage.getItem("id_token");
 class BasicExample extends Component {
     constructor(props) {
         super(props);
         const loggedIn = localStorage.getItem("idtoken") !== null
             ? true
             : false;
-        this.state = { loggedIn: loggedIn };
+        this.state = {
+            loggedIn: loggedIn,
+            chatlogs: []
+        };
         this.logout = this.logout.bind(this);
         this.login = this.login.bind(this);
+        if (loggedIn) {
+            socket = io("localhost:8000", {
+                query: {
+                    token: localStorage.getItem("idtoken")
+                }
+            });
+        }
     }
 
     logout() {
@@ -58,9 +64,26 @@ class BasicExample extends Component {
             credentials: "same-origin"
         }).then(response => {
             response.json().then(data => {
-                if (data.idtoken !== "undefined") {
+                if (
+                    data.idtoken !== "undefined" && data.idtoken !== undefined
+                ) {
+                    console.log(data.idtoken);
                     window.localStorage.setItem("idtoken", data.idtoken);
                     window.localStorage.setItem("username", data.username);
+                    socket = io("localhost:8000", {
+                        query: {
+                            token: localStorage.getItem("idtoken")
+                        }
+                    });
+                    socket.on("chat message", messages => {
+                        console.log(this.state);
+                        this.updateChatlogs(messages);
+                    });
+                    socket.on("error", error => {
+                        console.log(`Error: ${error}`);
+                        window.localStorage.clear();
+                        return this.setState({ loggedIn: false });
+                    });
                     return this.setState({ loggedIn: true });
                 } else {
                     console.log(
@@ -70,6 +93,20 @@ class BasicExample extends Component {
                 }
             });
         });
+    }
+    updateChatlogs(messages) {
+        this.setState({ chatlogs: messages });
+    }
+    componentDidMount() {
+        if (this.state.loggedIn) {
+            socket.on("chat message", messages => {
+                this.updateChatlogs(messages);
+            });
+            socket.on("error", error => {
+                console.log(`Error: ${error}`);
+                return this.setState({ loggedIn: false });
+            });
+        }
     }
 
     render() {
@@ -105,6 +142,8 @@ class BasicExample extends Component {
                         )}
                     />
                     <PrivateRoute
+                        test={"this is a test"}
+                        chatlogs={this.state.chatlogs}
                         loggedIn={this.state.loggedIn}
                         socket={socket}
                         exact
@@ -112,12 +151,14 @@ class BasicExample extends Component {
                         component={ChatBox}
                     />
                     <PrivateRoute
+                        chatlogs={this.state.chatlogs}
                         loggedIn={this.state.loggedIn}
                         socket={socket}
                         path="/auth"
                         component={ChatBox}
                     />
                     <PrivateRoute
+                        chatlogs={this.state.chatlogs}
                         loggedIn={this.state.loggedIn}
                         socket={socket}
                         path="localhost:3000/"
@@ -129,12 +170,18 @@ class BasicExample extends Component {
     }
 }
 
-const PrivateRoute = ({ component: Component, socket, loggedIn, ...rest }) => (
+const PrivateRoute = ({
+    component: Component,
+    socket,
+    loggedIn,
+    chatlogs,
+    ...rest
+}) => (
     <Route
         {...rest}
         render={props =>
             (loggedIn
-                ? <Component socket={socket} {...props} />
+                ? <Component chatlogs={chatlogs} socket={socket} {...props} />
                 : <Redirect
                       to={{
                           pathname: "/login"
