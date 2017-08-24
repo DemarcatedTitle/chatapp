@@ -50,6 +50,7 @@ class BasicExample extends Component {
     logout() {
         let history = this.props.history;
         window.localStorage.clear();
+        socket.close();
         return this.setState({ loggedIn: false });
         // return history.push("/");
     }
@@ -76,19 +77,18 @@ class BasicExample extends Component {
                         }
                     });
                     socket.on("chat message", messages => {
-                        console.log(this.state);
+                        console.log("fetch emitter");
+                        console.log(socket.listeners("chat message"));
                         this.updateChatlogs(messages);
                     });
                     socket.on("error", error => {
                         console.log(`Error: ${error}`);
                         window.localStorage.clear();
+                        socket.close();
                         return this.setState({ loggedIn: false });
                     });
                     return this.setState({ loggedIn: true });
                 } else {
-                    console.log(
-                        "That username/password combination didn't match our records"
-                    );
                     return this.setState({ wrongPass: true });
                 }
             });
@@ -100,10 +100,12 @@ class BasicExample extends Component {
     componentDidMount() {
         if (this.state.loggedIn) {
             socket.on("chat message", messages => {
+                console.log("componentdidmount emitter");
+                console.log(socket.listeners("chat message"));
                 this.updateChatlogs(messages);
             });
             socket.on("error", error => {
-                console.log(`Error: ${error}`);
+                console.log(`componentDidMount Error: ${error}`);
                 return this.setState({ loggedIn: false });
             });
         }
@@ -136,6 +138,7 @@ class BasicExample extends Component {
                         render={routeProps => (
                             <Login
                                 {...routeProps}
+                                wrongPass={this.state.wrongPass}
                                 loggedIn={this.state.loggedIn}
                                 login={login}
                             />

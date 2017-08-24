@@ -6,8 +6,6 @@ const Inert = require("inert");
 const path = require("path");
 const JWT = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-
-// const socketioJwt = require("socketio-jwt");
 const secret = "nevershareyoursecret";
 
 var users = new Map();
@@ -33,8 +31,9 @@ server.register(Inert, () => {});
 server.connection({ port: 8000, labels: "login" });
 const login = server.select("login");
 login.register(require("hapi-auth-jwt2"), function(err) {
-    // if (err) {
-    // }
+    if (err) {
+        console.log(err);
+    }
     login.auth.strategy("jwt", "jwt", {
         key: secret,
         validateFunc: validate
@@ -179,12 +178,13 @@ io.on("connection", function(socket) {
             if (err) {
                 io.emit("error", "Something went wrong, please try logging in");
             } else {
+                // Putting an if statement here that checks date.now()/1000 against decoded.exp
+                // Is untenable because if you emit an error in the else, it emits to all clients
                 chatlogs.push({
                     date: new Date(),
                     message: msg,
                     username: decoded.username
                 });
-                console.log(chatlogs);
                 io.emit("chat message", chatlogs);
                 console.log("Message received");
             }

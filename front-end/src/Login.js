@@ -68,44 +68,63 @@ class Login extends React.Component {
             return <Redirect to={{ pathname: "/auth" }} />;
         } else {
             return (
-                <div>
-                    <div className="loginContainer">
-                        <form
-                            onSubmit={this.handleSubmit}
-                            className="login"
-                            action=""
-                        >
-                            <div>
-                                <label htmlFor="username">Username</label>
-                                <input
-                                    autoComplete="off"
-                                    name="username"
-                                    onChange={this.handleChange}
-                                    type="username"
-                                />
-                                <label htmlFor="password">Password</label>
-                                <input
-                                    autoComplete="off"
-                                    name="password"
-                                    onChange={this.handleChange}
-                                    type="password"
-                                />
-                                <button>Login</button>
-                                {this.state.error
-                                    ? <p className="">
-                                          {this.state.error}
-                                      </p>
-                                    : ""}
-                                {this.state.registered
-                                    ? <p className="">
-                                          You are now registered, try logging in.
-                                      </p>
-                                    : ""}
-                                <button onClick={this.handleClick}>
-                                    Register
-                                </button>
-                            </div>
-                        </form>
+                <div className="">
+                    <div className="componentContainer">
+                        <div className="spacer" />
+                        <div className="loginContainer">
+                            <form
+                                onSubmit={this.handleSubmit}
+                                className="login"
+                                action=""
+                            >
+                                <div>
+                                    <div>
+                                        <label htmlFor="username">
+                                            Username
+                                        </label>
+                                        <div className="spacer" />
+                                        <input
+                                            autoComplete="off"
+                                            name="username"
+                                            onChange={this.handleChange}
+                                            type="username"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label htmlFor="password">
+                                            Password
+                                        </label>
+                                        <div className="spacer" />
+                                        <input
+                                            autoComplete="off"
+                                            name="password"
+                                            onChange={this.handleChange}
+                                            type="password"
+                                        />
+                                    </div>
+                                    <button>Login</button>
+                                    {this.state.error
+                                        ? <p className="">
+                                              {this.state.error}
+                                          </p>
+                                        : ""}
+                                    {this.state.registered
+                                        ? <p className="">
+                                              You are now registered, try logging in.
+                                          </p>
+                                        : ""}
+                                    <button onClick={this.handleClick}>
+                                        Register
+                                    </button>
+                                </div>
+                            </form>
+                            {this.props.wrongPass
+                                ? <p>
+                                      That log in attempt didn't work. Please try logging in or registering again.
+                                  </p>
+                                : ""}
+                        </div>
+                        <div className="spacer" />
                     </div>
                 </div>
             );
