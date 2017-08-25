@@ -90,10 +90,11 @@ login.register(require("hapi-auth-jwt2"), function(err) {
                 console.log(
                     `request.payload: ${JSON.stringify(request.payload)}`
                 );
+                // Set expiresIn to a long time to work on front end things.
                 var token = JWT.sign(
                     { username: request.payload.username },
                     secret,
-                    { expiresIn: 60 }
+                    { expiresIn: 600000 }
                 );
                 function authenticate(username, password) {
                     bcrypt.compare(
@@ -166,12 +167,23 @@ io.use(function(socket, next) {
 });
 
 var chatlogs = [];
-
+let rooms = new Map();
 io.on("connection", function(socket) {
     let userToken = socket.handshake.query.token;
     io.emit("chat message", chatlogs.slice(-10));
     JWT.verify(userToken, secret, function(err, decoded) {
         console.log(`${decoded.username} has connected`);
+    });
+    socket.on("new room", function(msg) {
+        JWT.verify(userToken, secret, function(err, decoded) {
+            if (err) {
+                io.emit("error", "Something went wrong");
+            } else {
+                console.log("new room");
+                rooms.set(msg, io.of(msg));
+                console.log(rooms.get(msg));
+            }
+        });
     });
     socket.on("chat message", function(msg) {
         JWT.verify(userToken, secret, function(err, decoded) {

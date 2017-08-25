@@ -51,7 +51,6 @@ class ChatBox extends React.PureComponent {
         });
         return (
             <div className="chatBox">
-
                 <ul id="messages">
                     {chatlogs}
                     <li id="endOfMessages"> End of messages </li>

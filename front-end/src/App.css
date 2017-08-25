@@ -14,10 +14,9 @@ ul {
     margin: 0;
     padding: 0;
     list-style: none;
-    max-height: 400px;
-    height: 400px;
+    /* max-height: 400px; */
+    /* height: 400px; */
     background-color: dimgray;
-    overflow-y: scroll;
     /* max-width: 800px; */
 }
 .App-header {
@@ -72,7 +71,6 @@ input {
     width: max-content;
 }
 p {
-    padding-left: 5px;
     margin: 0;
 }
 .wrongPassContainer {
@@ -111,9 +109,36 @@ p {
     justify-content: center;
 
 }
+.rooms {
+    color: black;
+}
+.rooms ul {
+    display: flex;
+}
+.rooms ul li {
+    border-left: 1px solid white;
+    border-right: 1px solid white;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+.rooms ul li p:hover {
+    background-color: yellow;
+}
+
+.in {
+    background-color: grey;
+}
+.active {
+    background-color: orange;
+}
+
 .chatBox { 
     background-color: grey;
     max-width:800px;
+}
+.chatBox  ul {
+    height: 400px;
+    overflow-y: scroll;
 }
 a:visited {
     color: orange;
