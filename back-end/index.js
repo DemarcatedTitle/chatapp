@@ -94,7 +94,7 @@ login.register(require("hapi-auth-jwt2"), function(err) {
                 var token = JWT.sign(
                     { username: request.payload.username },
                     secret,
-                    { expiresIn: 600000 }
+                    { expiresIn: 1200 }
                 );
                 function authenticate(username, password) {
                     bcrypt.compare(
@@ -166,39 +166,112 @@ io.use(function(socket, next) {
     });
 });
 
-var chatlogs = [];
+let chatters = new Map();
+var chatlogs = new Map();
 let rooms = new Map();
 io.on("connection", function(socket) {
+    let currentRoom = "";
     let userToken = socket.handshake.query.token;
-    io.emit("chat message", chatlogs.slice(-10));
+    io.emit(
+        "rooms",
+        JSON.stringify({
+            rooms: Array.from(rooms.keys()),
+            currentRoom: currentRoom
+        })
+    );
+    console.log(Array.from(rooms.keys()));
+    // io.emit("chat message", chatlogs.slice(-10));
     JWT.verify(userToken, secret, function(err, decoded) {
+        chatters.set(decoded.username, socket.id);
         console.log(`${decoded.username} has connected`);
+        console.log(
+            `${decoded.username} has an id of ${chatters.get(decoded.username)}`
+        );
     });
-    socket.on("new room", function(msg) {
+    socket.on("new room", function(room) {
+        console.log(socket.id);
+        currentRoom = room;
         JWT.verify(userToken, secret, function(err, decoded) {
             if (err) {
                 io.emit("error", "Something went wrong");
-            } else {
-                console.log("new room");
-                rooms.set(msg, io.of(msg));
-                console.log(rooms.get(msg));
+            } else if (decoded.username) {
+                rooms.set(room, io.of(room));
+                chatlogs.set(currentRoom, []);
+                console.log(chatlogs.get(currentRoom));
+                socket.join(room, () => {
+                    socket.broadcast.emit(
+                        "rooms",
+                        JSON.stringify({
+                            rooms: Array.from(rooms.keys())
+                        })
+                    );
+
+                    io.to(socket.id).emit(
+                        "rooms",
+                        JSON.stringify({
+                            rooms: Array.from(rooms.keys()),
+                            currentRoom: room
+                        })
+                    );
+                    // socket.on("chat message", function(message) {
+                    //     JWT.verify(userToken, secret, function(err, decoded) {
+                    //         if (err) {
+                    //             console.log(err);
+                    //             console.log(socket.id);
+                    //             // socket.emit("error", "Something went wrong");
+                    //         } else if (decoded.username) {
+                    //             console.log(chatlogs.get(currentRoom));
+                    //             chatlogs.get(currentRoom).push({
+                    //                 date: new Date(),
+                    //                 message: message,
+                    //                 username: decoded.username
+                    //             });
+                    //             console.log(chatlogs.get(room));
+                    //             io
+                    //                 .in(room)
+                    //                 .emit("chat message", chatlogs.get(room));
+                    //         }
+                    //     });
+                    // });
+                });
             }
         });
     });
-    socket.on("chat message", function(msg) {
-        JWT.verify(userToken, secret, function(err, decoded) {
-            if (err) {
-                io.emit("error", "Something went wrong, please try logging in");
-            } else {
-                // Putting an if statement here that checks date.now()/1000 against decoded.exp
-                // Is untenable because if you emit an error in the else, it emits to all clients
-                chatlogs.push({
+    JWT.verify(userToken, secret, function(err, decoded) {
+        if (err) {
+            console.log(err);
+            console.log(socket.id);
+            // socket.emit("error", "Something went wrong");
+        } else {
+            socket.on("chat message", function(message) {
+                console.log(`room is ${currentRoom}`);
+                chatlogs.get(currentRoom).push({
                     date: new Date(),
-                    message: msg,
+                    message: message,
                     username: decoded.username
                 });
-                io.emit("chat message", chatlogs);
-                console.log("Message received");
+                io
+                    .in(currentRoom)
+                    .emit("chat message", chatlogs.get(currentRoom));
+            });
+        }
+    });
+    socket.on("join", function(room) {
+        currentRoom = room;
+        JWT.verify(userToken, secret, function(err, decoded) {
+            if (err) {
+                io.to(socket.id).emit("error", "Something went wrong");
+            } else if (decoded.username) {
+                socket.join(room, () => {
+                    io.to(socket.id).emit(
+                        "rooms",
+                        JSON.stringify({
+                            rooms: Array.from(rooms.keys()),
+                            currentRoom: room
+                        })
+                    );
+                    io.to(socket.id).emit("chat message", chatlogs.get(room));
+                });
             }
         });
     });

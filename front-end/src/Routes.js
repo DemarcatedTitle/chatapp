@@ -11,7 +11,11 @@ import PrivateRoute from "./PrivateRoute.js";
 import ChatBox from "./ChatBox.js";
 import LoggedIn from "./LoggedIn.js";
 import Login from "./Login.js";
+import NewRoom from "./NewRoom.js";
+import Rooms from "./Rooms.js";
 const io = require("socket.io-client");
+const sockethandlers = require("./sockethandlers.js");
+const roomhandler = require("./sockethandlers.js").rooms;
 let socket;
 class Routes extends Component {
     constructor(props) {
@@ -20,24 +24,28 @@ class Routes extends Component {
             ? true
             : false;
         // Temporary set Logged in as true to set it all up
-        this.state = {
-            loggedIn: loggedIn,
-            chatlogs: [],
-            newRoom: false
-        };
-        this.logout = this.logout.bind(this);
-        this.login = this.login.bind(this);
-        this.joinChat = this.joinChat.bind(this);
-        this.addRoom = this.addRoom.bind(this);
+        let listeners = false;
         if (loggedIn) {
             socket = io("localhost:8000", {
                 query: {
                     token: localStorage.getItem("idtoken")
                 }
             });
+            console.log("socket = located in constructor");
         }
+        this.state = {
+            loggedIn: loggedIn,
+            chatlogs: [],
+            newRoom: false,
+            rooms: [],
+            currentRoom: "",
+            listeners: listeners
+        };
+        this.logout = this.logout.bind(this);
+        this.login = this.login.bind(this);
+        this.joinChat = this.joinChat.bind(this);
+        this.createRoom = this.createRoom.bind(this);
     }
-
     logout() {
         let history = this.props.history;
         window.localStorage.clear();
@@ -62,22 +70,23 @@ class Routes extends Component {
                     console.log(data.idtoken);
                     window.localStorage.setItem("idtoken", data.idtoken);
                     window.localStorage.setItem("username", data.username);
+                    console.log("located in fetch socket =");
                     socket = io("localhost:8000", {
                         query: {
                             token: localStorage.getItem("idtoken")
                         }
                     });
-                    socket.on("chat message", messages => {
-                        console.log("fetch emitter");
-                        console.log(socket.listeners("chat message"));
-                        this.updateChatlogs(messages);
-                    });
+                    socket.on(
+                        "chat message",
+                        sockethandlers.chatMessages.bind(this)
+                    );
+                    socket.on("rooms", roomhandler.bind(this));
                     socket.on("error", error => {
-                        console.log(`Error: ${error}`);
-                        window.localStorage.clear();
+                        console.log(`componentDidMount Error: ${error}`);
                         socket.close();
                         return this.setState({ loggedIn: false });
                     });
+
                     return this.setState({ loggedIn: true });
                 } else {
                     return this.setState({ wrongPass: true });
@@ -85,11 +94,13 @@ class Routes extends Component {
             });
         });
     }
-    joinChat(chat) {}
-    addRoom(event) {
-        event.preventDefault();
-
-        this.setState({ newRoom: !this.state.newRoom });
+    createRoom(payload) {
+        socket.emit("new room", payload);
+    }
+    joinChat(chatroom) {
+        console.log(chatroom);
+        socket.emit("join", chatroom);
+        this.setState({ chatlogs: [] });
     }
     updateChatlogs(messages) {
         this.setState({ chatlogs: messages });
@@ -98,16 +109,26 @@ class Routes extends Component {
         if (this.state.loggedIn) {
             socket.on("chat message", messages => {
                 console.log("componentdidmount emitter");
-                console.log(socket.listeners("chat message"));
                 this.updateChatlogs(messages);
+            });
+            socket.on("rooms", rooms => {
+                const roomObj = JSON.parse(rooms);
+                if (roomObj.currentRoom) {
+                    this.setState({
+                        rooms: roomObj.rooms,
+                        currentRoom: roomObj.currentRoom
+                    });
+                } else {
+                    this.setState({ rooms: roomObj.rooms });
+                }
             });
             socket.on("error", error => {
                 console.log(`componentDidMount Error: ${error}`);
+                socket.close();
                 return this.setState({ loggedIn: false });
             });
         }
     }
-
     render() {
         const login = this.login;
         return (
@@ -129,30 +150,12 @@ class Routes extends Component {
                     </ul>
 
                     <hr />
-                    <div className="rooms">
-                        <ul>
-                            <li onClick={this.joinChat("coding-101")}>
-                                <p className="in">Coding-101</p>
-                            </li>
-                            <li>
-                                <p
-                                    className="active"
-                                    onClick={this.joinChat("coding-101")}
-                                >
-                                    Random
-                                </p>
-                            </li>
-                            <li>
-                                {this.state.newRoom === false
-                                    ? <p className="" onClick={this.addRoom}>
-                                          + New Room
-                                      </p>
-                                    : <form onSubmit={this.addRoom}>
-                                          <input /><button>Add</button>
-                                      </form>}
-                            </li>
-                        </ul>
-                    </div>
+                    <Rooms
+                        rooms={this.state.rooms}
+                        joinChat={this.joinChat}
+                        currentRoom={this.state.currentRoom}
+                        createRoom={this.createRoom}
+                    />
                     <Route
                         exact
                         path="/login"

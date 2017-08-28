@@ -14,9 +14,6 @@ class ChatBox extends React.PureComponent {
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleChange = this.handleChange.bind(this);
     }
-    updateChatlogs(messages) {
-        this.setState({ chatlogs: messages });
-    }
     handleSubmit(event) {
         event.preventDefault();
         this.props.socket.emit("chat message", this.state.message);
