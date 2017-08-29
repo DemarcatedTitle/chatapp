@@ -11,13 +11,19 @@ const PrivateRoute = ({
     socket,
     loggedIn,
     chatlogs,
+    roomsProps,
     ...rest
 }) => (
     <Route
         {...rest}
         render={props =>
             (loggedIn
-                ? <Component chatlogs={chatlogs} socket={socket} {...props} />
+                ? <Component
+                      roomsProps={roomsProps}
+                      chatlogs={chatlogs}
+                      socket={socket}
+                      {...props}
+                  />
                 : <Redirect
                       to={{
                           pathname: "/login"

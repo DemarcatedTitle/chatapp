@@ -8,11 +8,15 @@ class Rooms extends Component {
         this.clickChat = this.clickChat.bind(this);
     }
     clickChat(event) {
-        this.props.joinChat(event.target.textContent);
+        this.props.roomsProps.joinChat(event.target.textContent);
     }
     render() {
-        let roomArray = this.props.rooms.map((room, index) => {
-            const active = room === this.props.currentRoom ? "active" : "";
+        let roomArray = this.props.roomsProps.rooms.map((room, index) => {
+            const active = room === this.props.roomsProps.currentRoom
+                ? "active"
+                : "";
+            // const active = "";
+            // console.log(this.props.roomsProps.currentRoom);
             return (
                 <li key={index} onClick={this.clickChat}>
                     <p className={active}>{room}</p>
@@ -24,7 +28,9 @@ class Rooms extends Component {
                 <ul>
                     {roomArray}
                     <li>
-                        <NewRoom createRoom={this.props.createRoom} />
+                        <NewRoom
+                            createRoom={this.props.roomsProps.createRoom}
+                        />
                     </li>
                 </ul>
             </div>

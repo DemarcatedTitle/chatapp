@@ -108,18 +108,17 @@ class Routes extends Component {
     componentDidMount() {
         if (this.state.loggedIn) {
             socket.on("chat message", messages => {
-                console.log("componentdidmount emitter");
                 this.updateChatlogs(messages);
             });
             socket.on("rooms", rooms => {
                 const roomObj = JSON.parse(rooms);
                 if (roomObj.currentRoom) {
-                    this.setState({
+                    return this.setState({
                         rooms: roomObj.rooms,
                         currentRoom: roomObj.currentRoom
                     });
                 } else {
-                    this.setState({ rooms: roomObj.rooms });
+                    return this.setState({ rooms: roomObj.rooms });
                 }
             });
             socket.on("error", error => {
@@ -131,6 +130,11 @@ class Routes extends Component {
     }
     render() {
         const login = this.login;
+        const roomsProps = {};
+        roomsProps.rooms = this.state.rooms;
+        roomsProps.joinChat = this.joinChat;
+        roomsProps.currentRoom = this.state.currentRoom;
+        roomsProps.createRoom = this.createRoom;
         return (
             <Router>
                 <div>
@@ -150,47 +154,38 @@ class Routes extends Component {
                     </ul>
 
                     <hr />
-                    <Rooms
-                        rooms={this.state.rooms}
-                        joinChat={this.joinChat}
-                        currentRoom={this.state.currentRoom}
-                        createRoom={this.createRoom}
-                    />
-                    <Route
-                        exact
-                        path="/login"
-                        render={routeProps => (
-                            <Login
-                                {...routeProps}
-                                wrongPass={this.state.wrongPass}
-                                loggedIn={this.state.loggedIn}
-                                login={login}
-                            />
-                        )}
-                    />
-                    <PrivateRoute
-                        test={"this is a test"}
-                        chatlogs={this.state.chatlogs}
-                        loggedIn={this.state.loggedIn}
-                        socket={socket}
-                        exact
-                        path="/"
-                        component={ChatBox}
-                    />
-                    <PrivateRoute
-                        chatlogs={this.state.chatlogs}
-                        loggedIn={this.state.loggedIn}
-                        socket={socket}
-                        path="/auth"
-                        component={ChatBox}
-                    />
-                    <PrivateRoute
-                        chatlogs={this.state.chatlogs}
-                        loggedIn={this.state.loggedIn}
-                        socket={socket}
-                        path="localhost:3000/"
-                        component={ChatBox}
-                    />
+                    <div>
+                        <Route
+                            exact
+                            path="/login"
+                            render={routeProps => (
+                                <Login
+                                    {...routeProps}
+                                    wrongPass={this.state.wrongPass}
+                                    loggedIn={this.state.loggedIn}
+                                    login={login}
+                                />
+                            )}
+                        />
+                        <PrivateRoute
+                            test={"this is a test"}
+                            roomsProps={roomsProps}
+                            chatlogs={this.state.chatlogs}
+                            loggedIn={this.state.loggedIn}
+                            socket={socket}
+                            exact
+                            path="/"
+                            component={ChatBox}
+                        />
+                        <PrivateRoute
+                            roomsProps={roomsProps}
+                            chatlogs={this.state.chatlogs}
+                            loggedIn={this.state.loggedIn}
+                            socket={socket}
+                            path="/auth"
+                            component={ChatBox}
+                        />
+                    </div>
                 </div>
             </Router>
         );

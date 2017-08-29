@@ -1,12 +1,7 @@
 /* eslint-disable no-console */
 import React from "react";
+import Rooms from "./Rooms.js";
 import moment from "moment";
-// const io = require("socket.io-client");
-// const socket = io("localhost:8000", {
-//     query: {
-//         token: localStorage.getItem("idtoken")
-//     }
-// });
 class ChatBox extends React.PureComponent {
     constructor(props) {
         super(props);
@@ -47,21 +42,36 @@ class ChatBox extends React.PureComponent {
             );
         });
         return (
-            <div className="chatBox">
-                <ul id="messages">
-                    {chatlogs}
-                    <li id="endOfMessages"> End of messages </li>
-                </ul>
-                <form onSubmit={this.handleSubmit}>
-                    <input
-                        autoComplete="off"
-                        value={this.state.message}
-                        onChange={this.handleChange}
-                        type="text"
-                        id="m"
-                    />
-                    <button onClick={this.handleClick}>Send</button>
-                </form>
+            <div className="columnContainer">
+                <Rooms roomsProps={this.props.roomsProps} />
+                <div className="rowContainer">
+                    <div className="chatBox">
+                        <ul id="messages">
+                            {chatlogs}
+                            <li id="endOfMessages"> End of messages </li>
+                        </ul>
+                        <form onSubmit={this.handleSubmit}>
+                            <input
+                                autoComplete="off"
+                                value={this.state.message}
+                                onChange={this.handleChange}
+                                type="text"
+                                id="m"
+                            />
+                            <button onClick={this.handleClick}>Send</button>
+                        </form>
+                    </div>
+                    <div className="users">
+                        <ul>
+                            <li>
+                                <p>DarthVader</p>
+                            </li>
+                            <li>
+                                <p>JarJar</p>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         );
     }
