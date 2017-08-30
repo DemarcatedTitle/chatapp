@@ -15,8 +15,6 @@ class Rooms extends Component {
             const active = room === this.props.roomsProps.currentRoom
                 ? "active"
                 : "";
-            // const active = "";
-            // console.log(this.props.roomsProps.currentRoom);
             return (
                 <li key={index} onClick={this.clickChat}>
                     <p className={active}>{room}</p>

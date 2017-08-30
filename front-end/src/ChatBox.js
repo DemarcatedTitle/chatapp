@@ -1,6 +1,8 @@
 /* eslint-disable no-console */
+/* eslint-disable no-unused-vars */
 import React from "react";
 import Rooms from "./Rooms.js";
+import Users from "./Users.js";
 import moment from "moment";
 class ChatBox extends React.PureComponent {
     constructor(props) {
@@ -23,24 +25,38 @@ class ChatBox extends React.PureComponent {
     }
     componentWillUnmount() {}
     render() {
-        let chatlogs = this.props.chatlogs.map(function(message, index) {
-            return (
-                <li key={index}>
-                    <div className="messageData">
-                        <p>
-                            {moment(message.date).format("MM/DD/YY hh:mm a")}
-                        </p>
+        // currentroom gets set before chat logs
+        let displayedRoom = "";
+        if (
+            this.props.chatlogs.get(this.props.roomsProps.currentRoom) ===
+            undefined
+        ) {
+            displayedRoom = "";
+        } else {
+            displayedRoom = this.props.roomsProps.currentRoom;
+        }
+        let chatlogs = this.props.chatlogs
+            .get(displayedRoom)
+            .map(function(message, index) {
+                return (
+                    <li key={index}>
+                        <div className="messageData">
+                            <p>
+                                {moment(message.date).format(
+                                    "MM/DD/YY hh:mm a"
+                                )}
+                            </p>
+                            {" "}
+                            <p className="username">
+                                {message.username}
+                            </p>
+                            <p />
+                        </div>
                         {" "}
-                        <p className="username">
-                            {message.username}
-                        </p>
-                        <p />
-                    </div>
-                    {" "}
-                    <div className="message"><p>{message.message}</p></div>
-                </li>
-            );
-        });
+                        <div className="message"><p>{message.message}</p></div>
+                    </li>
+                );
+            });
         return (
             <div className="columnContainer">
                 <Rooms roomsProps={this.props.roomsProps} />
@@ -61,16 +77,7 @@ class ChatBox extends React.PureComponent {
                             <button onClick={this.handleClick}>Send</button>
                         </form>
                     </div>
-                    <div className="users">
-                        <ul>
-                            <li>
-                                <p>DarthVader</p>
-                            </li>
-                            <li>
-                                <p>JarJar</p>
-                            </li>
-                        </ul>
-                    </div>
+                    <Users usersProps={this.props.usersProps} />
                 </div>
             </div>
         );

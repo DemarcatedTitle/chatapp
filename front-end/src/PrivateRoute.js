@@ -12,6 +12,7 @@ const PrivateRoute = ({
     loggedIn,
     chatlogs,
     roomsProps,
+    usersProps,
     ...rest
 }) => (
     <Route
@@ -20,6 +21,7 @@ const PrivateRoute = ({
             (loggedIn
                 ? <Component
                       roomsProps={roomsProps}
+                      usersProps={usersProps}
                       chatlogs={chatlogs}
                       socket={socket}
                       {...props}

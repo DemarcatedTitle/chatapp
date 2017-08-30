@@ -35,11 +35,13 @@ class Routes extends Component {
         }
         this.state = {
             loggedIn: loggedIn,
-            chatlogs: [],
+            chatlogs: new Map([["", []]]),
             newRoom: false,
             rooms: [],
             currentRoom: "",
-            listeners: listeners
+            listeners: listeners,
+            users: [],
+            currentUser: ""
         };
         this.logout = this.logout.bind(this);
         this.login = this.login.bind(this);
@@ -67,13 +69,30 @@ class Routes extends Component {
                 if (
                     data.idtoken !== "undefined" && data.idtoken !== undefined
                 ) {
-                    console.log(data.idtoken);
                     window.localStorage.setItem("idtoken", data.idtoken);
                     window.localStorage.setItem("username", data.username);
                     console.log("located in fetch socket =");
                     socket = io("localhost:8000", {
                         query: {
                             token: localStorage.getItem("idtoken")
+                        }
+                    });
+                    socket.on("users", users => {
+                        const userObj = JSON.parse(users);
+                        if (
+                            userObj.currentUser !== undefined &&
+                            userObj.users !== undefined
+                        ) {
+                            return this.setState({
+                                users: userObj.users,
+                                currentUser: userObj.currentUser
+                            });
+                        } else {
+                            console.log(
+                                `userobj has some undefined ${JSON.stringify(userObj)}`
+                            );
+                            console.log(typeof userObj);
+                            // return this.setState({ users: userObj.users });
                         }
                     });
                     socket.on(
@@ -98,17 +117,32 @@ class Routes extends Component {
         socket.emit("new room", payload);
     }
     joinChat(chatroom) {
-        console.log(chatroom);
+        let tempLog = this.state.chatlogs;
+        this.setState({ chatlogs: tempLog.set(chatroom, []) });
         socket.emit("join", chatroom);
-        this.setState({ chatlogs: [] });
     }
     updateChatlogs(messages) {
-        this.setState({ chatlogs: messages });
+        const messagesObj = JSON.parse(messages);
+        let tempLog = this.state.chatlogs;
+        tempLog.set(messagesObj.room, messagesObj.logs);
+        this.setState({ chatlogs: tempLog });
     }
     componentDidMount() {
         if (this.state.loggedIn) {
             socket.on("chat message", messages => {
                 this.updateChatlogs(messages);
+            });
+            socket.on("users", users => {
+                // console.log(users);
+                const userObj = JSON.parse(users);
+                if (userObj.currentuser) {
+                    return this.setState({
+                        users: userObj.users,
+                        currentUser: userObj.currentUser
+                    });
+                } else {
+                    return this.setState({ users: userObj.users });
+                }
             });
             socket.on("rooms", rooms => {
                 const roomObj = JSON.parse(rooms);
@@ -130,11 +164,16 @@ class Routes extends Component {
     }
     render() {
         const login = this.login;
-        const roomsProps = {};
-        roomsProps.rooms = this.state.rooms;
-        roomsProps.joinChat = this.joinChat;
-        roomsProps.currentRoom = this.state.currentRoom;
-        roomsProps.createRoom = this.createRoom;
+        const roomsProps = {
+            rooms: this.state.rooms,
+            joinChat: this.joinChat,
+            currentRoom: this.state.currentRoom,
+            createRoom: this.createRoom
+        };
+        const usersProps = {
+            users: this.state.users,
+            currentUser: this.state.currentUser
+        };
         return (
             <Router>
                 <div>
@@ -170,6 +209,7 @@ class Routes extends Component {
                         <PrivateRoute
                             test={"this is a test"}
                             roomsProps={roomsProps}
+                            usersProps={usersProps}
                             chatlogs={this.state.chatlogs}
                             loggedIn={this.state.loggedIn}
                             socket={socket}
@@ -179,6 +219,7 @@ class Routes extends Component {
                         />
                         <PrivateRoute
                             roomsProps={roomsProps}
+                            usersProps={usersProps}
                             chatlogs={this.state.chatlogs}
                             loggedIn={this.state.loggedIn}
                             socket={socket}

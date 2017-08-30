@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+/* eslint-disable indent */
 const Hapi = require("hapi");
 const Boom = require("boom");
 const Joi = require("joi");
@@ -60,7 +61,6 @@ login.register(require("hapi-auth-jwt2"), function(err) {
                 }
             },
             handler: function(request, reply) {
-                console.log(request.payload);
                 bcrypt.hash(request.payload.password, 10, function(err, hash) {
                     if (err) {
                         reply(err);
@@ -69,7 +69,6 @@ login.register(require("hapi-auth-jwt2"), function(err) {
                             password: hash,
                             username: request.payload.username
                         });
-                        console.log(users);
                         reply({ text: "success" });
                     }
                 });
@@ -87,9 +86,9 @@ login.register(require("hapi-auth-jwt2"), function(err) {
             path: "/api/auth",
             config: { auth: false },
             handler: function(request, reply) {
-                console.log(
-                    `request.payload: ${JSON.stringify(request.payload)}`
-                );
+                // console.log(
+                //     `request.payload: ${JSON.stringify(request.payload)}`
+                // );
                 // Set expiresIn to a long time to work on front end things.
                 var token = JWT.sign(
                     { username: request.payload.username },
@@ -151,6 +150,12 @@ login.register(require("hapi-auth-jwt2"), function(err) {
 });
 
 var io = require("socket.io")(login.listener);
+function chatMessageEmission(room, chatlogs) {
+    return JSON.stringify({
+        room: room,
+        logs: chatlogs.get(room)
+    });
+}
 
 io.use(function(socket, next) {
     const receivedToken = socket.handshake.query.token;
@@ -172,24 +177,31 @@ let rooms = new Map();
 io.on("connection", function(socket) {
     let currentRoom = "";
     let userToken = socket.handshake.query.token;
-    io.emit(
+    io.to(socket.id).emit(
         "rooms",
         JSON.stringify({
             rooms: Array.from(rooms.keys()),
             currentRoom: currentRoom
         })
     );
-    console.log(Array.from(rooms.keys()));
-    // io.emit("chat message", chatlogs.slice(-10));
     JWT.verify(userToken, secret, function(err, decoded) {
-        chatters.set(decoded.username, socket.id);
-        console.log(`${decoded.username} has connected`);
-        console.log(
-            `${decoded.username} has an id of ${chatters.get(decoded.username)}`
-        );
+        chatters.set(socket.id, decoded.username);
+        io.in(currentRoom).clients((error, clients) => {
+            if (error) throw error;
+            io.to(socket.id).emit(
+                "users",
+                JSON.stringify({
+                    users: clients.map(client => chatters.get(client)),
+                    currentUser: decoded.username
+                })
+            );
+        });
+    });
+    socket.on("disconnect", function(reason) {
+        console.log(reason);
+        chatters.delete(socket.id);
     });
     socket.on("new room", function(room) {
-        console.log(socket.id);
         currentRoom = room;
         JWT.verify(userToken, secret, function(err, decoded) {
             if (err) {
@@ -197,7 +209,6 @@ io.on("connection", function(socket) {
             } else if (decoded.username) {
                 rooms.set(room, io.of(room));
                 chatlogs.set(currentRoom, []);
-                console.log(chatlogs.get(currentRoom));
                 socket.join(room, () => {
                     socket.broadcast.emit(
                         "rooms",
@@ -205,6 +216,18 @@ io.on("connection", function(socket) {
                             rooms: Array.from(rooms.keys())
                         })
                     );
+                    io.in(currentRoom).clients((error, clients) => {
+                        if (error) throw error;
+                        io.to(socket.id).emit(
+                            "users",
+                            JSON.stringify({
+                                users: clients.map(client =>
+                                    chatters.get(client)
+                                ),
+                                currentUser: decoded.username
+                            })
+                        );
+                    });
 
                     io.to(socket.id).emit(
                         "rooms",
@@ -213,46 +236,40 @@ io.on("connection", function(socket) {
                             currentRoom: room
                         })
                     );
-                    // socket.on("chat message", function(message) {
-                    //     JWT.verify(userToken, secret, function(err, decoded) {
-                    //         if (err) {
-                    //             console.log(err);
-                    //             console.log(socket.id);
-                    //             // socket.emit("error", "Something went wrong");
-                    //         } else if (decoded.username) {
-                    //             console.log(chatlogs.get(currentRoom));
-                    //             chatlogs.get(currentRoom).push({
-                    //                 date: new Date(),
-                    //                 message: message,
-                    //                 username: decoded.username
-                    //             });
-                    //             console.log(chatlogs.get(room));
-                    //             io
-                    //                 .in(room)
-                    //                 .emit("chat message", chatlogs.get(room));
-                    //         }
-                    //     });
-                    // });
                 });
             }
         });
     });
     JWT.verify(userToken, secret, function(err, decoded) {
         if (err) {
-            console.log(err);
-            console.log(socket.id);
-            // socket.emit("error", "Something went wrong");
+            socket.emit("error", "Something went wrong");
         } else {
             socket.on("chat message", function(message) {
-                console.log(`room is ${currentRoom}`);
-                chatlogs.get(currentRoom).push({
-                    date: new Date(),
-                    message: message,
-                    username: decoded.username
-                });
-                io
-                    .in(currentRoom)
-                    .emit("chat message", chatlogs.get(currentRoom));
+                if (chatlogs.get(currentRoom)) {
+                    console.log(`${chatters.get(socket.id)} just spoke`);
+                    io.in(currentRoom).clients((error, clients) => {
+                        if (error) throw error;
+                        console.log(
+                            `The following just heard:
+                        ${clients.map(function(id) {
+                                return chatters.get(id);
+                            })}
+                        `
+                        );
+                    });
+                    console.log(`room is ${currentRoom}`);
+                    chatlogs.get(currentRoom).push({
+                        date: new Date(),
+                        message: message,
+                        username: decoded.username
+                    });
+                    io
+                        .in(currentRoom)
+                        .emit(
+                            "chat message",
+                            chatMessageEmission(currentRoom, chatlogs)
+                        );
+                }
             });
         }
     });
@@ -270,7 +287,25 @@ io.on("connection", function(socket) {
                             currentRoom: room
                         })
                     );
-                    io.to(socket.id).emit("chat message", chatlogs.get(room));
+                    io.in(currentRoom).clients((error, clients) => {
+                        if (error) throw error;
+                        io.to(socket.id).emit(
+                            "users",
+                            JSON.stringify({
+                                users: clients.map(client =>
+                                    chatters.get(client)
+                                ),
+                                currentUser: decoded.username
+                            })
+                        );
+                    });
+                    io.to(socket.id).emit(
+                        "chat message",
+                        JSON.stringify({
+                            room: room,
+                            logs: chatlogs.get(room)
+                        })
+                    );
                 });
             }
         });
