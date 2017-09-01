@@ -17,6 +17,7 @@ const io = require("socket.io-client");
 const sockethandlers = require("./sockethandlers.js");
 const roomhandler = require("./sockethandlers.js").rooms;
 let socket;
+
 class Routes extends Component {
     constructor(props) {
         super(props);
@@ -77,23 +78,23 @@ class Routes extends Component {
                             token: localStorage.getItem("idtoken")
                         }
                     });
-                    socket.on("users", users => {
-                        const userObj = JSON.parse(users);
-                        if (
-                            userObj.currentUser !== undefined &&
-                            userObj.users !== undefined
-                        ) {
-                            return this.setState({
-                                users: userObj.users,
-                                currentUser: userObj.currentUser
+                    socket.on("users", sockethandlers.users.bind(this));
+                    socket.on("userJoined", user => {
+                        console.log(user);
+                        if (!this.state.users.includes(user)) {
+                            this.setState({
+                                users: this.state.users.concat(user)
                             });
-                        } else {
-                            console.log(
-                                `userobj has some undefined ${JSON.stringify(userObj)}`
-                            );
-                            console.log(typeof userObj);
-                            // return this.setState({ users: userObj.users });
                         }
+                    });
+                    socket.on("userLeft", user => {
+                        // this.setstate remove user
+                        console.log("userLeft");
+                        this.setState({
+                            users: this.state.users.filter(
+                                oldUser => oldUser !== user
+                            )
+                        });
                     });
                     socket.on(
                         "chat message",
@@ -132,29 +133,24 @@ class Routes extends Component {
             socket.on("chat message", messages => {
                 this.updateChatlogs(messages);
             });
-            socket.on("users", users => {
-                // console.log(users);
-                const userObj = JSON.parse(users);
-                if (userObj.currentuser) {
-                    return this.setState({
-                        users: userObj.users,
-                        currentUser: userObj.currentUser
+
+            socket.on("userJoined", user => {
+                if (!this.state.users.includes(user)) {
+                    this.setState({
+                        users: this.state.users.concat(user)
                     });
-                } else {
-                    return this.setState({ users: userObj.users });
                 }
             });
-            socket.on("rooms", rooms => {
-                const roomObj = JSON.parse(rooms);
-                if (roomObj.currentRoom) {
-                    return this.setState({
-                        rooms: roomObj.rooms,
-                        currentRoom: roomObj.currentRoom
-                    });
-                } else {
-                    return this.setState({ rooms: roomObj.rooms });
-                }
+            socket.on("userLeft", user => {
+                // this.setstate remove user
+                console.log("userLeft");
+                this.setState({
+                    users: this.state.users.filter(oldUser => oldUser !== user)
+                });
             });
+            socket.on("users", sockethandlers.users.bind(this));
+            socket.on("chat message", sockethandlers.chatMessages.bind(this));
+            socket.on("rooms", roomhandler.bind(this));
             socket.on("error", error => {
                 console.log(`componentDidMount Error: ${error}`);
                 socket.close();

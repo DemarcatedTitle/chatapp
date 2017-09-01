@@ -32,9 +32,6 @@ class Login extends React.Component {
         this.props.login(event, creds);
     }
     handleClick(event) {
-        // console.log(
-        //     `idtoken: ${JSON.stringify(window.localStorage.getItem("idtoken"))}`
-        // );
         event.preventDefault();
         fetch("/api/register", {
             method: "POST",

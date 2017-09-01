@@ -197,8 +197,17 @@ io.on("connection", function(socket) {
             );
         });
     });
-    socket.on("disconnect", function(reason) {
+    socket.on("disconnecting", function(reason) {
         console.log(reason);
+        const roomsLeaving = Object.keys(socket.rooms);
+        roomsLeaving.forEach(function(room) {
+            console.log(room);
+            console.log(`${chatters.get(socket.id)} just left`);
+            socket.to(room).emit("userLeft", chatters.get(socket.id));
+
+            // io.in(currentRoom).clients((error, clients) => {
+            // });
+        });
         chatters.delete(socket.id);
     });
     socket.on("new room", function(room) {
@@ -210,6 +219,7 @@ io.on("connection", function(socket) {
                 rooms.set(room, io.of(room));
                 chatlogs.set(currentRoom, []);
                 socket.join(room, () => {
+                    // console.log(socket.rooms);
                     socket.broadcast.emit(
                         "rooms",
                         JSON.stringify({
@@ -279,6 +289,13 @@ io.on("connection", function(socket) {
             if (err) {
                 io.to(socket.id).emit("error", "Something went wrong");
             } else if (decoded.username) {
+                io.in(currentRoom).clients(function(error, clients) {
+                    if (!clients.includes(users)) {
+                        socket
+                            .to(room)
+                            .emit("userJoined", chatters.get(socket.id));
+                    }
+                });
                 socket.join(room, () => {
                     io.to(socket.id).emit(
                         "rooms",
@@ -299,6 +316,14 @@ io.on("connection", function(socket) {
                             })
                         );
                     });
+                    // io.in(currentRoom).clients(function(error, clients) {
+                    //     if (!clients.includes(users)) {
+                    //         socket
+                    //             .to(room)
+                    //             .emit("userJoined", chatters.get(socket.id));
+                    //     }
+                    // });
+
                     io.to(socket.id).emit(
                         "chat message",
                         JSON.stringify({
