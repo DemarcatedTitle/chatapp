@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import Routes from "./Routes.js";
 import LoggedIn from "./LoggedIn.js";
+import SocketContainer from "./SocketContainer.js";
 import logo from "./logo.svg";
 import "./App.css";
 const io = require("socket.io-client");
@@ -22,7 +23,7 @@ class App extends Component {
         return (
             <div className="App">
                 <div>
-                    <Routes loggedIn={this.props.loggedIn} />
+                    <SocketContainer />
                 </div>
             </div>
         );
